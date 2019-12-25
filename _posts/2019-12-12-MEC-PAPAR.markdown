@@ -1,0 +1,289 @@
+---
+layout: post
+title: 基于MEC的无线区块链网络中的计算卸载和内容缓冲配置
+tags: [Mobile Edge Computing,Block Chain,Convex]
+image: '/images/posts/2.jpg'
+---
+   
+    - 这篇博客写的是我最近在看的导师给我的论文所做的笔记。专业性比较强，不感兴趣的可以忽略本篇。
+    - 在打公式的时候因为是latex形式，而且在markdown文件里面插入公式需要用到半角输入的一个符号,要来回切换中英文输入法实在是太麻烦了,所以以后长篇并且公式多的文章笔者可能会尝试英文写作。
+    - 笔者用手机访问过了，发现没办法适应手机浏览器阅读模式，以后会想办法解决。
+    - 写到后面有一些很长的公式，打代码很累，而且经常稍不注意打错了，多了个括号，要检查很久才能发现，部分公式就偷懒截图。
+
+## 摘要&文章总体结构
+<hr>
+区块链的采矿过程中对移动设备的计算能力和存储能力有很高的要求，所以提出一种MEC(移动边缘计算)的无线区块链架构。其中计算密集型任务可以被加载到多个边缘计算节点上，并且块的加密散列(cryptographic hashes)可以被缓存在MEC服务器中。特别地，考虑两种加载模式，即相邻用户的任意访问点或组的加载。首先，文章用随机几何方法对每种模式进行性能分析。然后，将加载决策和缓存策略的联合问题归结为一个优化问题（并且转化成了一个凸问题）。在此基础上，采用基于乘法器的交替方向法，以分布式的方式求解该问题。最后，仿真结果验证了该方案的有效性。
+
+## 文章主体
+<hr>
+
+### 系统模型（SYSTEM MODEL）
+
+####  **A**.Application Model 
+考虑一个MEC服务器能够承载一个区块链网络，里面有$ M $ 个$ APs $(在一篇中文文献上看到把这个解释成接入点，所以我猜测应该是access point)和$N$个用户。并且接入点和用户是独立齐次泊松过程（HPPPs）$ \Phi_a=\left\[ AP_1,AP_2,...,AP_M \right\] $并且$ \Phi_u=\left\[ x_1,x_2,...,x_N \right\] $ (这里因为是集合，所以我想打的是花括号，但是由于网站自身的原因显示错误，不得已用中括号来代替。)我们假设有一个MEC服务器被放在了云端，并且所有的$APs$通过核心网（core net我不清楚该不该这么翻译）链接到MEC服务器。我们用$ {\Phi_u }^{\left( m \right)}=\left\[ x_{n_m} \right\] $,$ x_{n_m}\in\Phi_u $,$n=1,...,N_m $,并且$x_{n_m}$表示在第m个接入点（文章里说的是cell，我估计是指AP吧）的第n个用户。并且对于$x_{n_m}$来说，有$K_{m\,n}$个D2D（device-to-divice）链接到一组相邻的用户设备，我们用$\{\Phi_u}^{\left(m\,n\right)}=\left[x_{k_{m\,n}}\right]$来表示，$k=1,...,K_{m,n}$。
+
+    不知道我自己理解的对不对，其实这里我发现这并不是单单应用到区块链的场景当中了，而是在这样的场景中使用了区块链的技术，去中心化（decentralization）的思想，每个移动用户扮演的是一个矿工的角色，在记录整个网络的transaction。
+    
+  对于每个矿工$x_{n_m}$，我们用一组参数来表示$\left\< D_{m,n},\tau_{m,n},X_{m,n}\right\>$。完成一个挖矿任务$A_{\left<m,n\right>}$需要的输入数据size为$D_{m,n}$单位是bits,截止时间是$\tau_{m,n}$,计算的工作量/工作强度用$X_{m,n}$(CPU cycles/bits)。$APm$的计算能力是${f_m}^A$，而矿工$x_{k_{m,n}}$的计算能力是${f_{m,n,k}}^U$
+文章所有的符号都写在这个notation表里了。~~（但是我发现访问的时候看不到，我添加的格式没有问题，这个问题待解决）~~
+
+![Image_text](/images/posts/table1.jpg)
+
+
+####  **B**.Computation Offloading Model 
+假设在MEC中的所有$APs$和矿工都可以为执行任务服务提供计算，所以计算困难的挖矿任务会卸载到附近的$APs$或者矿工，我们提出两种卸载模式
+1. MODE0:向附近的$AP$卸载，也就是矿工$x_{n_m}$将整个挖矿任务$A_{\left<m,n\right>}$卸载到跟他关联的接入点$AP_m$.
+2. MODE1:想附近的一群D2D用户卸载，矿工$x_{n_m}$将整个挖矿任务划分成$K_\left<m.n\right>$个部分,$A_{\left<m,n,1\right>},...A_{\left<m,n,K_{m,n}\right>}$,并且把他们通过D2D links分发到相邻或靠近的用户，进行共同计算。
+
+用$\delta\left(n_m\right)\in\left[0,1\right]$(这里表示的是0或者1，还是因为大括号打不出来)来表示卸载的决策，简单说$\delta\left(n_m\right)=0$表示矿工$x_{n_m}$选择mode0,等于1就表示选择mode1.用$\rho\left(n_m,k_{m,n}\right)\in\left[0,1\right]$(注意这里真的是一个闭区间0到1)，定义成向第$k_{m,n}$个D2D用户卸载的部分$A_{\left<m,n，k_{m,n}\right>}$占$A_{\left<m,n\right>}$的比例.
+
+####  **C**.Network Model
+APs和用户之间的信道需要考虑路径损耗和Rayleigh衰落。
+mode0:
+1. $x_{n_m}$和$AP_m$之间的路损是${r_{m,n}}^{-\alpha}$
+   - $r_{m,n}$是矿工和接入点的距离
+   - $\alpha$是路损的指数
+2. $x_{n_m}$和$AP_m$之间的瑞丽衰落可以表示为$h_{m,n}$,其中$h_{m,n}~exp\left(mu\right)$
+
+mode1:
+1. $x_{n_m}$和$x_{k_{m,n}}$之间的路损是${l_{m,n,k}}^{-\alpha}$
+2. $x_{n_m}$和$x_{k_{m,n}}$之间的瑞丽衰落可以表示为$g_{m,n,k}$,其中$g_{m,n,k}~exp\left(mu\right)$.
+当然这里的$h_{m,n}$，$g_{m,n,k}$是相互独立的。
+每个用户在带宽为$B$,噪声功率为$\sigma^2$的信道发送功率是$P_U$。
+因此，对于$x_{n_m}$,最大upload传输速率（bits/s）来把挖矿任务$A_\left<m,n\right>$给$AP_m$可以表示为
+
+$$R^A\left(n_m\right)=Bln\left(1+\frac{ P_U h_{m,n} {r_{m,n}}^{-\alpha} }{ \sigma^2+\sum_{x_i\in\Phi_u\backslash x_{n_m}} {P_Uh_{m,i}{r_{m,i}}^{-\alpha}}   }\right) $$
+         
+         这个公式也太难打了吧，公式的原型应该是香农极限，括号里面一大块是SNR。不过这里笔者还是不是太理解，为什么要剔除掉那一项。
+         
+ 同样的，把task$A_{\left<m,n,k\right>}$卸载到$x_{k_{m,n}}$最大传输速率
+
+$$R^D\left(n_m,k_{m,n}\right)=Bln\left(1+\frac{ \frac{P_U}{K_{m,n}} g_{m,n,k} {l_{m,n,k}}^{-\alpha} }{ \sigma^2+\sum_{x_i\in\Phi_u\backslash x_{n_m}} { \frac{P_U}{K_{m,n}}g_{m,j,k}{l_{m,j,k}}^{-\alpha}}   }\right) $$
+
+这里传输功率$P_U$均匀分布到所有的D2D链路上。
+
+#### D. Caching Model
+引入一个决策变量$s\left(n_m\right)$,等于0或者1，等于1表示MEC服务器决定存储$x_{n_m}$负责区块的hash散列(cryptographic hashs 这个笔者不清楚怎么翻译才算好)，等于0就表示不存储。
+文章简单考虑了存储矿工$x_{n_m}$负责区块的hash序列的收益
+
+$$v\left(n_m\right)=\dot{q_{m,n}}R_{m,n}^c$$
+- $\dot{q_{m,n}}$是要求的缓存内容的速率
+- $R_{m,n}^c$是存储收益，单位是*token*
+
+      这里的token我在必应上查就是游戏王里面的术语，代币。百度查的结果是令牌，这个跟比特币等数字货币的数字钱包有点相似。然后还在百度上查到了一个数字货币钱包网站[imtoken](https://www.token.im/)
+ 
+ 后面我们的收益的单位都是token
+ 总的存储的内容不能超过MEC服务器的存储上线$C$,因此有
+ $$ \sum_{m=1}^{M}{\sum_{n=1}^{N^m}{s\left(n_m\right)\chi_{m,n}}} \leq C $$
+
+### 框架和性能分析
+ 
+    这部分考虑两种模式的延时，功耗，orphaning（区块链中的词，意思是block所在的链成了孤链）的概率
+
+#### A. Offloaded to a nearby AP(Mode 0)
+这个模式之前说了，是矿工把整个任务全部卸载给接入点AP
+假设每个miner值知道本地的CSI(信道状态信息)
+参考信号接受功率(RSRP)
+
+$RSRP^{\left(A\right)}=P_U h_{m,n} {r_{m,n}}^{-\alpha}$
+##### Delay
+完成一个挖矿任务$A_{\left<m,n\right>}$包括的时间有uploading，computing,queueing
+
+$T^{\left(A\right)}\left(n_m\right)=T^{\left(A,u\right)}\left(n_m\right)+T^{\left(A,e\right)}\left(n_m\right)+T^{\left(A,q\right)}\left(n_m\right)$
+
+这里文章注明了一下，由于输出数据量跟输入数据量相比很少并且AP的传输功率比移动用户大得多，所以就忽略了AP的反馈延迟。这种假设同样适用到Mode 1.
+
+- Uploading delay
+$ T^{\left(A,u\right)}\left(n_m\right)=\frac{D_{m,n}}{R^A\left(n_m\right)} $
+要是想计算上面这个式子的分母，需要知道所有的CSI,这个需要很大的信令开销（signaling overhead）,尤其是密集网络。所以文章里面提出一种用随机几何方法估计的办法，平均总干扰。
+
+ $$R^A\left(n_m\right)\approx Bln\left(1+\frac{ P_U h_{m,n} {r_{m,n}}^{-\alpha} }{ \sigma^2+E\left(I_m\right)- {P_Uh_{m,i}{r_{m,i}}^{-\alpha}}   }\right) $$ 
+
+这里
+$I_m=\sum_{x_i\in\Phi_u}{P_Uh_{m,n}{r_{m,n}}^{-\alpha}}$
+  看到这里其实笔者就不太理解了，这个随机几何是啥方法???
+文章给出了$I_m$的CDF，（以前我看文献的时候不懂什么是CDF,后来知道就是概率论里面的概率分布函数，也就是我们通常理解的PDF概率密度函数的求积分）
+~~这个CDF和它的期望实在是太长了，等我把这个问题弄懂了再贴上来。~~
+
+*Proposition 1*:
+$F_{I_m}\left(\xi\right)=P\left[I_m\leq\xi\right]\approx$
+$ \int_{0\<\hat{r_1}\<...\<\hat{r_\beta}\<\infty}$
+$1-exp\left(-\frac{\mu\xi}{P_U$\left[     \sum_{i=1}^{\beta}{\hat{r_i}^{-\alpha}}+\sum_{c=\beta+1}^{N}{\left ( \pi\lambda_u \right )   }^{\frac{\alpha}{2}}+\frac{\Gamma\left ( c-\frac{\alpha}{2} \right )}{\Gamma\left ( c \right )}   \right]}\right)$ $f\left(\hat{r_1},...,\hat{r_{\beta}}\right)d\hat{r_1}...d\hat{r_{\beta}}$
+
+文章的最后有推导，有一步要用到另一篇文献里的结论，比较麻烦，这里也不详细写出来了。
+- Executing time
+
+$T^{\left(A,e\right)}\left(n_m\right)=\frac{D_{m,n}X_{m,n}}{f_{m}^A}$
+- Queuing delay
+
+$T^{\left(A,q\right)}\left(n_m\right)=\frac{Q_m}{f_m^A}$
+排队延迟只考虑矿工做出决定的时候，在task buffer等待task的时间。（不太懂）
+
+#### Energy Consumption
+不考虑miner接受计算结果的功耗，只考虑task uploading，computing和CPU operation的功耗。总功率可以表示
+
+$E^{\left(A\right)}\left(n_m\right)=P_UT^{\left(A,u\right)}+\kappa_m^A\left(f_m^A\right)^3T^{\left(A,e\right)}\left(n_m\right)+P_CT^{\left(A,q\right)}\left(n_m\right)$
+
+$\kappa_m^A$是$APm$computation能量效率系数,$P_C$是static circuit power.
+#### Orphaning Probability
+前面就提到过。mining成功是要看整个过程（offloading,computing）在task结束前成功，也就是整个delay不能超过一个deadline,不然就失败了，在区块链就叫orphaning。
+$$
+p_O^{\left(A\right)}\left(n_m\right)=P\left[T^{\left(A\right)}\left(N_m\right)\geq\tau_{m,n}\right]
+$$
+### B.Offloaded to a Group of D2D Users(Mode 1)
+mode 1是将mining task offloaded到一组D2D 用户。
+这个模式下每个用户我们假设只知道local 信道信息
+- Delay
+这里延迟不同于mode 0,所有的小部分都被offloaded了并且计算任务全部完成了才结束。
+$$ T^{\left(D\right)}\left(n_m\right)=\max\limits_{k=1,...,K_{m,n}}\rho\left(n_m,k_{m,n}\right)T^{\left(D\right)}\left(n_m,k_{m,n}\right) = \max\limits_{k=1,...,K_{m,n}}\rho\left(n_m,k_{m,n}\right)\left[T^{\left(D,u\right)}\left(n_m,k_{m,n}\right)+T^{\left(D,e\right)}\left(n_m,k_{m,n}\right)\right]$$
+
+注意这里$T^{\left(D\right)}\left(n_m,k_{m,n}\right)$是如果把整个$A_\left<m,n\right>$任务全给$x_{k_{m,n}}$要花费的时间，因为我们设的$\rho$是占总任务的比例。
+而且mode 1里面的queueing delay都被忽略，因为每个miner只有很小的computational capacity
+
+#### Uploading delay
+部分挖矿任务$A_{\left<m,n,K_{m,n}\right>}$给$x_{k_{m,n}}$upload花费的时间
+
+![fml_16](/images/posts/16.jpg)
+
+同样的最大upload 传输速率可以约等于
+
+![fml_17](/images/posts/17.jpg)
+#### Executing time
+mode 1下的矿工$x_{n_m}$选择计算$A_\left<m,n,K_{m,n}\right>$要花费的执行时间
+![fml_18](/images/posts/18.jpg)
+
+- Energy Consumption
+完成$A_\left<m,n\right>$需要所有D2D用户的总的能耗
+
+![fml_19](/images/posts/19.jpg)
+
+这里面$\kappa_{m,n,k}^U$是$x_{k_{m,n}}$处理器的计算能量效率系数
+
+- Orphaning Probability
+
+![fml_20](/images/posts/20.jpg)
+
+### COMPUTATION OFFLOADING AND CONTENT CACHING OPTIMAIZATION
+文章这部分研究优化计算offloading策略和存储决策$\left(\delta,\rho,s\right)$来最大化卸载和存储的纯收益。
+原本一个非凸的问题用过一个基于ADMM的算法转化成一个凸问题。
+#### A.Optimization Objective
+计算卸载完成一个挖矿任务的净收益
+
+![fml_21](/images/posts/21.jpg)
+这里面$\vartheta_e$(in *token/J*)是单位能量的价格，$\varsigma^{\left(A\right)}$(in *token*)$\varsigma^{\left(D\right)}$(in *token*)分别是mode 0和mode 1的收益。为了区分mode 1里面offloading和local execution的收益，进一步区分，$\varsigma^{\left(D_L\right)}$和$\zeta^{\left(D_L\right)}$,而且本地的收益要低于offloading
+
+这里文章注释了一下，收入来自于成功mining,而代价，对于mode 0来说，代价包括 加入blockchian的admission fee，leasing bandwidth的费用等，对于mode 1来说，还要包括分给别的D2D用户的奖励。
+
+对于存储方面
+![fml_22](/images/posts/22.jpg)
+前面提到过$v\left(n_m\right)$(in *token*)是存储的收益，$\varpi$(in *token*)代表存储的代价
+文章里面在综合考虑了计算和存储的综合净收益之后，还引入了一个新的decision making Z(in *token*),这里我不是很理解要这个Z有什么用。
+![fml_23](/images/posts/23.jpg)
+
+#### B.Problem Formulation
+这就成了一个优化问题了,优化变量就是决策vector$\left(\delta,\rho,s\right)$
+
+![P1](/images/posts/P1.jpg)
+
+![fml_24](/images/posts/24.jpg)
+
+- 第一个constraint很好理解，保证了offloading策略决策的有效性，概率之和等于1.
+- 文章里面说这是一种probabilistic backhaul constraint 确保所有offloading到APm的矿工总的数据传输速率超过backhual capacity的概率不大于一个阈值
+- 第三条就是总的延时不能超过ddl 同时也是一种概率约束，让每种mining task不会超过一个阈值
+- 第四个constraint意思是每个通过D2D链路的数据量不能超过链路的capability
+- 第五条总的存储的数据量不能超过MEC服务器的存储容量。
+#### C.Problem Transformation
+上面的P1并不好解决，问题有三个方面
+1. $\delta$和$s$都是0/1，C2,C3,C4不是变量$\left(\delta,\rho\right)$的凸函数，P1的可行域也不是凸的
+2. $\delta$和$\rho$之间有一个相乘的关系，这让目标函数不是一个凸函数
+3. 简而言之就是问题复杂度太大。
+
+P1是个混合离散的非凸的优化问题，也就是NP-难问题。（之前老是听说NP问题，并不知道什么意思，所以去搜了一下。[NP](https://blog.csdn.net/qq_21768483/article/details/80430590)）
+
+为了简化问题，进行了以下变换和relaxation(这个应该就是我们常说的松弛)
+1. Binary Variable Relaxation:
+我们将$\delta$和$s$都解释成概率，分别表示旷工$x_{n_m}$选择mode 1的概率和存储和$x_{n_m}$hash散列的概率
+2. Constraint Relaxation:
+解决$C2$约束非凸的问题，
+![fml_25](/images/posts/25.jpg)
+这个不等式就算最坏的情况，所有用户都将task卸载给了AP，还是会成立的，这个松弛是让约束更加的保守。
+为了方便，我们用$p_B\left(n_m\right)=P\left[R^A\left(n_m\right)\geq\Omega_m\div N_m\right]$
+![fml_26](/images/posts/26.jpg)
+
+同样的对$C3$也进行变换
+![fml_27](/images/posts/27.jpg)
+让${\bar{p}}_O^{\left(D\right)}\left(n_m,k_{m,n}\right)=P\left[T^{\left(D\right)}\left(n_m,k_{m,n}\right)\geq\tau_{m,n}\right]$
+![fml_28](/images/posts/28.jpg)
+
+3.Substitution of the Product Term:
+用一个新的变量来代替两个相乘的量
+![fml_29](/images/posts/29.jpg)
+根据上面的变换，问题就转化成新的形式。
+![fml_30](/images/posts/30.jpg)
+*Remark 1*:如果P2可行，这就是关于$\delta,\tilde{\rho},s$联合convex 
+文章还说明了为什么是凸的。
+#### D.Problem Decomposition
+由于有一个全局变量$s$的存在才使得整个优化问题无法分割，所以现在就要定义一个local copy of the global variable $s$
+对于$AP_m$，我们首先用
+$\hat{s_m}=\left[\hat{s_m}\left(n_i\right\)\right],n=1,..,N_i,m,i=1,...,M$
+
+所以有
+$\hat{s_m}\left(n_i\right)=s\left(n_i\right)$
+
+优化问题转化成
+![fml_33](/images/posts/33.jpg)
+
+cell m的可行域可以这么表示
+$\prod_m=\left[\delta_m,\tilde{\rho_m},\hat{s_m}\mid C1',C2',C3',C4',C5',C6\right]$
+
+![fml_34](/images/posts/34.jpg)
+
+P3重新写成
+
+![fml_35](/images/posts/35.jpg)
+
+
+#### E.Problem Solutions Through ADMM
+
+P3'的增广Lagrangian可以被写作
+
+![fml_36](/images/posts/36.jpg)
+
+各种对应的系数可以看的ADMM总结。
+我们把local variables写为
+$X=\left[X_m\right]=\left[\delta\left(n_m\right),\tilde{\rho}\left(n_m,k_{m,n}\right),\hat{s_m}\left(n_i\right)\right]$
+整个迭代的过程包括如下的三个步骤
+
+![fml_39](/images/posts/39.jpg)
+
+Local Vaciables Updata:
+37里面每个local variables都可以被分别独立的更新，也就是说$APm$需要在第$t+1$步迭代解决如下的优化问题
+![fml_40](/images/posts/40.jpg)
+
+上面的PL是不等式约束的二次凸优化问题，可以被分成两个子问题
+![fml_41](/images/posts/41.jpg)
+
+![fml_42](/images/posts/42.jpg)
+
+PL1是线性规划问题，PL2是二次规划问题。
+对于PL2，我们需要一个初始的可行解，我们考虑一个特别的例子，如果只有一个矿工的hash散列被存储到MEC server，我们把这个矿工标记被$x_{\bar{n}_\bar{m}}$
+
+我们就可以设${x_{\bar{n}_\bar{m}}}^{\left(0\right)}=1$,并且${s\left(n_m\right)}^{\left(0\right)}$,$\forall n_m\not \bar{n}_\bar{m}$
+
+Global Variables and Lagrange Multipliers Update:
+38是一个无约束的二次型问题，并且由于增广拉格朗日式子加上的二次正则项，所以是个严格凸的问题。
+$s$对应的全局最优解可以简单的关于$s$的导数为0就得到。
+
+![fml_43](/images/posts/43.jpg)
+
+我们可以得到
+![fml_44](/images/posts/44.jpg)
+
+后面介绍的是仿真求解过程的算法和仿真的结果，就不再介绍了。
+
+
+
+
+
+
+

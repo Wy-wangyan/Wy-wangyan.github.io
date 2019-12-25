@@ -1,0 +1,152 @@
+---
+layout: post
+title: An introduction to Lyapunov Optimization
+tags: [Lyapunov Optimization]
+image: '/images/posts/5.jpg'
+---
+   
+
+     Lyapunov Optimization是笔者看一篇论文里面涉及到的优化方法，然后就去查了一下原理。前两天老师也讲过MEC里面有一种研究的路线是跟控制论有关，我记不太清，说的应该跟这个相关。
+     
+     
+### A Brief Introduction
+使用Lyapunov function来优化控制一个动态的系统，系统的某一个特定的时间节点的状态可以用一个多维向量来描述，而Lyapunov function则是对多维向量所表达的状态的一个非负的，标量的描述。我们常常采用‘所有状态在各自权重下的平方和’来实行这一点，Lyapunov function被设计的初衷是：如果系统的状态朝一个不被期望的方向发展，那么Lyapunov function的数值就会变大，这样，我们就可以通过将Lyapunov function沿着$x$轴负方向逼近0使得系统趋于稳定。
+
+### How it works
+一个随机优化问题(stochatsic optimization problem)如何使用Lyapunov Optimization来求解
+1. 为原始问题构造队列
+2. 给出使用Lyapunov优化技术得到的解
+3. 分析该解和原始问题的最优解之间的差距（optimality gap）
+#### Stochastic Optimization Problems
+  随机优化问题的随机是指每个时间片内有随机时间发生，面对这个随机事件我们能够采取的策略也要随机应变才行。
+  不妨将第$t$个time slot内产生的所有随机时间标记为$w\left(t\right)=\left[\omega_1\left(t\right),\omega_2\left(t\right),...\omega_n\left(t\right)\right]\in\Omega^n$,$\forall i\in\lbrace 1,...,n\rbrace,\omega_i\left(t\right)$对每个time slot满足独立同分布。$\Omega^n$为随机事件集合。系统在每个时间片内采取的策略记为$\alpha\left(t\right)=\left[\alpha_1\left(t\right),\alpha_2\left(t\right),...,\alpha_m\left(t\right)\right]\in \mathcal{A}^m$,$\mathcal{A}^m$是控制决策集合。
+    第$t$个time slot，根据当前发生的各个随机事件$w\left(t\right)$,系统采取的一些列的控制决策$\alpha\left(t\right)$
+    
+ 
+ $$p\left(t\right)=P\left(w\left(t\right),\alpha\left(t\right)\right)$$
+  
+  其中$P\left(\cdot\right)$就是一个确定的函数，除了优化目标，系统中的一系列变量也会受到我们采取的控制决策的影响，同样可以描述成
+  
+  $$y_k\left(t\right)=Y_k\left(w\left(t\right),\alpha\left(t\right)\right),k\in\lbrace1,...,K\rbrace,$$
+  除了随机性，在随机优化问题中，优化目标不再是简单的$f\left(x\right)$,而是原始目标函数在time average下的表现，这是因为只有当我们把time average引入，每个时间片下的表现才能都被纳入考虑中，现在我们给出随机优化问题的标准形式。
+  <hr>
+  
+   一个随机优化问题是：在一个时间被分片的时间域上最小化一个time average的目标函数，该目标函数在每个时间片的取值收到随机事件和采取的控制策略的影响。此外还需满足数个time average的约束条件，这些约束条件在每个时间片的取值亦受到随机事件和采取的控制策略的影响，在数学上可以表达为
+   
+   $$ \mathcal{P}_2:\min_{\forall t,\alpha\left(t\right)\in\mathcal{A}^m} \lim_{T\to \infty}\frac{1}{T}\sum_{t=0}^{T-1}{\mathbb{E}\left[p\left(t\right)\right]}$$
+   
+  $$s.t.\lim_{T\to\infty} \frac{1}{T}\sum_{t=0}^{T-1}{\mathbb{E}\left[y_k\left(t\right)\right]}\leq0,k\in\lbrace 1,...,K\rbrace$$ 
+   
+   
+ <hr>
+ 
+       出现期望运算的原因是问题中存在随机变量的函数，我们将服从独立同分布的司机事件看成在第t个事件片内的随机变量，那么$p\left(t\right)$和$y_k\left(t\right)$是随机变量的函数值
+   现在我们已经形成了一个标准的随机优化问题，接下来将会深入阐述如何为这个问题的约束条件构造队列，
+ 
+#### How to Construct Virtual Queues
+ 
+   为什么要为随机优化问题的约束条件定义队列？这是用为我们希望把满足这些长期的约束条件所应当采取的操作分解到每个时间片内进行。
+   Lyapunov Optimization的思想就是将具有长期约束条件的某个长期优化指标分解到每个time slot内进行，这样在每个时间片内，我们就可以在不破坏当前这个时间片需要遵循的约定的情况下直接优化$p\left(t\right)$.
+   因此，对每一个约束条件$y_k\left(t\right)$定义一个对应的，初始值为0的队列$Q_k\left(t\right)$
+   
+   $$Q_k\left(t+1\right)=\max\lbrace Q_k\left(t\right)+y_k\left(t\right),0\rbrace,k\in\lbrace 1,...,K\rbrace$$
+   
+   其实$Q_k\left(t\right)$并非队列本身，而是队列的储备量（the $k$th queue's backlog），队列只是一个概念，而队列的储备量才是一个数值。我们总是希望能够处理的大于新抵达的，因为约束条件中我们希望time average of $y_k\left(t\right)$不大于0
+   现在，我们研究一下如何控制队列$Q_k\left(t\right)$来保证我们能够满足上面的约束条件
+   由上面式子可知
+   
+   $$Q_k\left(t+1\right)\geq Q_k\left(t\right)+y_k\left(t\right),k\in\lbrace 1,...,K\rbrace$$
+   
+   变形可得
+   
+  $$y_k\left(t\right)\leq Q_k\left(t+1\right)-Q_k\left(t\right)$$
+  
+  对所有时间片执行累加操作，即可得
+  
+  $$\sum_{t=0}^{T-1}{y_k\left(t\right)}\leq Q_k\left(T\right)-Q_k\left(0\right)=Q_k\left(T\right),k\in\lbrace 1,...,K\rbrace$$
+  
+  两边同时取期望可以得到
+  
+  $$\frac{1}{T}\sum_{t=0}^{T-1}\mathbb{E}\left[y_k\left(t\right)\right]\leq\frac{\mathbb{E}\left[Q_k\left(T\right)\right]}{T},k\in\lbrace 1,...,K\rbrace$$
+  
+  为了让我们的约束成立，我们可以让
+  
+  $$\lim_{T\to\infty}\frac{\mathbb{E}\left[Q_k\left(T\right)\right]}{T}=0,k\in\lbrace 1,...,K\rbrace$$
+  
+  成立，或者也可以让
+  
+  $$\exists\delta\leq0,\lim_{T\to\infty}\frac{\mathbb{E}\left[Q_k\left(T\right)\right]}{T}\leq\delta,k\in\lbrace 1,...,K\rbrace$$
+  
+  成立，这两个都可以让约束条件恒成立，但是显然后者是更加严格的稳定，上面那个在某本书里面被称为mean rate stable
+  
+  Lyapunov Optimization常常采用前者，在对稳定性更为苛刻的系统中，显然后者更合适。
+  有了队列的概念，我们就可以形成新问题了。
+  新的随机优化问题可以定义成
+  
+  $$\mathcal{P}_3:\min_{\forall t,\alpha\left(t\right)\in\mathcal{A}^m}\lim_{T\to\infty}\frac{1}{T}\sum_{t=0}^{T-1}{\mathbb{E}\left[p\left(t\right)\right]}$$
+  
+  
+  $$s.t. \qquad \lim_{T\to\infty}\frac{\mathbb{E}\left[Q_k\left(T\right)\right]}{T}=0,k\in\lbrace 1,...,K\rbrace$$
+
+#### How to Solve the Problem
+
+
+##### Drift-plus-penalty Expression
+正如前文所述，Lyapunov function是对当前时间片内所有queues'backlog的一个标量的，非负的描述，将队列全体用一个矢量来描述$\Theta\left(t\right)=\left[Q_1\left(t\right),...,Q_K\left(t\right)\right]$,则Lyapunov function定义为
+
+$$L\left(\Theta\left(t\right)\right)=\frac{1}{2}\sum_{k=1}{K}Q_k{\left(t\right)}^2$$
+
+
+有了Lyapunov function 我们可以用$$\Delta\left(\Theta\left(t\right)\right)=L\left(\Theta\left(t+1\right)\right)-L\left(\Theta\left(t\right)\right)$$表示从时间片$t$到$t+1$全体queues'backlog的增长量，称之为
+*Lyapunov漂移（Lyapunov drift）*
+
+ 由之前的式子$y_k\left(t\right)\leq Q_k\left(t+1\right)-Q_k\left(t\right)$我们可以得到一个和我们直观感觉相悖的结论。
+ 
+ $$Q_k{\left(t+1\right)}^2\leq{\left(Q_k\left(t\right)+y_k\left(t\right)\right)}^2,k\in\lbrace 1,...,K\rbrace$$
+ 
+ 接下来给出证明。
+ 
+ 分类讨论
+
+(i)若$Q_k\left(t\right)+y_k\left(t\right)\geq0$,则，$Q_k\left(t+1\right)=Q_k\left(t\right)+y_k\left(t\right)$,因此
+
+$$Q_k{\left(t+1\right)}^2={\left(Q_k\left(t\right)+y_k\left(t\right)\right)}^2$$
+
+
+(ii)若$Q_k\left(t\right)+y_k\left(t\right)\<0$,则$Q_k\left(t+1\right)=0>Q_k\left(t\right)+y_k\left(t\right)$,因此
+
+$$Q_k{\left(t+1\right)}^2=0<{\left(Q_k\left(t\right)+y_k\left(t\right)\right)}^2$$
+
+
+再把我们得到的这个结论对所有的$K$个队列累加，可得
+
+$$\frac{1}{2}\sum_{k=1}^{K}Q_k{\left(t+1\right)}^2\leq\frac{1}{2}\sum_{k=1}^{K}Q_k{\left(t\right)}^2+\frac{1}{2}\sum_{k=1}^{K}y_k{\left(t\right)}^2+\frac{1}{2}\sum_{k=1}^{K}Q_k{\left(t\right)}y_k\left(t\right)$$
+因此有
+$$\Delta\left(\Theta\left(t\right)\right)=\frac{1}{2}\sum_{k=1}^K{Q_k{\left(t+1\right)}^2}-\frac{1}{2}\sum_{k=1}^K Q_k{\left(t\right)}^2\leq \frac{1}{2}\sum_{k=1}^{K}y_k{\left(t\right)}^2+\frac{1}{2}\sum_{k=1}^{K}Q_k{\left(t\right)}y_k\left(t\right)\leq B+\sum_{k=1}^{K}Q_k{\left(t\right)}y_k\left(t\right)$$
+
+其中$B$是一个常数，绝大多数实际问题中，$\frac{1}{2}\sum_{k=1}^K y_k{\left(t\right)}^2$一定存在一个正常数上界
+
+#### Drift-plus-penalty Algorithm
+
+引入队列之后就可以在不破坏当前这个时间片需要遵循的约定（控制队列保持稳定）的情况下直接优化$p\left(t\right)$如何实现对相关约定的遵循呢？一个很直观的方式就是在每个时间片内求解$\Delta\left(\Theta\left(t\right)\right)+V\cdot p\left(t\right)$,也就是同时求解Lyapunov漂移和$p\left(t\right)$的最小值，借助权重$V$来调节对二者的重视程度，因此我们可以形成问题$\mathcal{P}_4$
+
+$$\mathcal{P}_4:\min_{\forall t,\alpha\left(t\right)\in\mathcal{A}^m}\mathbb{E}\left[\Delta\left(\Theta\left(t\right)\right)+V\cdot p\left(t\right)|\Theta\left(t\right)\right]$$
+
+$$s.t.\lim_{T\to\infty}{\frac{\mathbb{E}\left[Q_k\left(T\right)\right]}{T}}=0,k\in\lbrace 1,...,K\rbrace$$
+在时间片$t$内怎么去求解$\Delta\left(\Theta\left(t\right)\right)+V\cdot p\left(t\right)$的最小值呢？这个优化目标中，只有获得$L\left(\Theta\left(t+1\right)\right)$才能表示出$\Delta\left(\Theta\left(t\right)\right)$,这意味着我们需要下一个时间片的信息，这样我们就无法在当前时间片解决这个问题了，如果我们对$\Delta\left(\Theta\left(t\right)\right)+V\cdot p\left(t\right)$做一些放缩
+
+$$\Delta\left(\Theta\left(t\right)\right)+V\cdot p\left(t\right)\leq B+V\cdot p\left(t\right)+\sum_{k=1}^{K}Q_k\left(t\right)y_k\left(t\right)$$
+
+求解右端的最小值就可以解决，代价是我们求解的并非原始问题的最优解，因此我们形成问题$\mathcal{P}_5$
+
+$$\mathcal{P}_5:\min_{\forall t,\alpha\left(t\right)\in \mathcal{A}^m}{\mathbb{E}}\left[B+V\cdot p\left(t\right)+\sum_{k=1}^{K}{Q_k\left(t\right)}y_k\left(t\right)|\Theta\left(t\right)\right]$$
+
+$$s.t.\lim_{T\to\infty}{\frac{\mathbb{E}\left[Q_k\left(T\right)\right]}{T}}=0,k\in\lbrace 1,...,K\rbrace $$
+下面就是Drift-plus-penalty algorithm
+          
+    我不知道markdown里面能不能写那种专业论文里面的Algorithm的表格，所以自己用latex写了一个并截图下来。
+
+   
+   ![ALG](/images/posts/ALG1.jpg)
+  
+  

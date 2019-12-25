@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+{% include head.html %}
+
+  <head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$']]
+            }
+        });
+    </script>
+</head>
+
+  
+<body>
+
+  {% include analytics.html %}
+
+  <div class='js-off-canvas-container c-off-canvas-container'>
+    {% include header.html %}
+
+    {{ content }}
+
+    {% include footer.html %}
+  </div>
+
+  <script src="{{ '/js/jquery-3.1.1.min.js' | prepend: site.baseurl }}"> </script>
+  <script src="{{ '/js/evil-icons.min.js' | prepend: site.baseurl }}">   </script>
+  <script src="{{ '/js/jquery.fitvids.js' | prepend: site.baseurl }}">   </script>
+  <script src="{{ '/js/app.js' | prepend: site.baseurl }}">              </script>
+</body>
+
+</html>

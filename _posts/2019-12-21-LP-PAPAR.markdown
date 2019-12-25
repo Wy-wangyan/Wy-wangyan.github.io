@@ -1,0 +1,160 @@
+---
+layout: post
+title: (未完成)Dynamic Computation Ofﬂoading for Mobile-Edge Computing with Energy Harvesting Devices
+tags: [MEC]
+image: '/images/posts/6.jpg'
+---
+
+
+    我写的公式里面凡是有\mathcal的部分都显示异常，应该是网站自身的原因，无法解决。
+    选修课期末论文，想拿高分就得写的多，用latex，论文仿真复现。在这里按照期末论文的模板规定先写着，然后再填到latex里面去。为什么选这篇论文？因为笔者在逛Github的时候无意发现有这篇论文仿真的matlab代码！
+    
+## 摘要
+略
+## 引言
+略
+## 系统模型
+### A. Mobile-edge Computing Systems with EH Devices
+  我们考虑一个MEC系统，它是由一个移动设备和一个MEC服务器组成。移动设备配备有能量收集组件，并且只由收集的可再生能源供能。MEC服务器是由电信运营商管理的小型的数据中心。移动设备可以通过无线信道接入，并且和MEC相距$d$米。移动设备在MEC服务器上有一个克隆的系统，并且可以替代移动设备进行计算。移动设备通过将计算任务卸载给MEC，计算的性能能得到巨大的提升。
+  我们假设时间是分片的，并且我们分别用$\tau$和$T=\lbrace 0,1,...\rbrace$表示每个时隙的长度和时隙的集合。无线信道看作是独立同分布的分组衰落，也就是说每个时隙内信道是保持静止的，但是不同时隙信道会发生变化。用$h^t$表示第$t$个时隙的信道功率增益,并且$h^t~F_H\left(x\right),t\in T$,这里$F_H\left(x\right)$是$h^t$的概率分布函数。
+
+
+### B.Computation Model
+
+  我们用$A\left(L,\tau_d\right)$来表示一个计算任务，$L$(单位bits)是任务的输入大小，$\tau_d$是执行的截至时间。移动设备上运行的计算任务看作一个独立同分布的伯努利过程。在每个时隙的开头，计算任务被下达的概率是$\rho$，也就是$1-\rho$的概率是没有发出计算的要求。$\zeta^t=1$表示第$t$个时隙有计算任务，相反$zeta^t=0$表示没有计算任务。同时我们的执行时间要小于时隙的长度$\tau_d\leq\tau$,并且假设对于排队的计算要求没有缓冲寄存器。
+  
+  每个计算任务可以在移动设备本地执行，或者被卸载到MEC服务器执行。也可能因为电池电量不够导致这个计算任务执行失败，被丢掉，这样的话两种执行模式都不会执行。我们用$I_j^t\in\lbrace 0,1\rbrace,j=\lbrace m,s,d\rbrace$来表示我们的计算模式。$I_m^t$和$I_s^t$分别表示计算任务在第$t$个时隙被放到移动设备执行和放到MEC服务器执行。而$I_d^t=1$表示计算任务被丢掉，因此计算模式满足以下约束。
+  
+  $$I_m^t+I_s^t+I_d^t=1,t\in T$$
+  
+  本地执行过程中，用$X$表示处理1bit的输入需要的CPU周期数，也就是是说要执行任务$A\left(L,\tau_d\right)$需要花费$W=LX$的CPU周期数。第$t$个时隙中的每个CPU周期的频率用$f_w^t,w=1,...,W$表示.因此，本地执行的计算任务在第$t$个时隙花费的总时间可以表示成
+  
+  $${D_{mobile}}^t=\sum_{w=1}^W\left(f_w^t\right)^{-1}$$
+  本地计算的能量消耗可以表示成
+  $$E_{mobile}^t=\kappa\sum_{w=1}^W\left(f_w^t\right)^2$$
+  
+  这里$\kappa$是有效转化电容，并且我们假设CPU频率存在上限，也就是$f_\omega^t\leq f_{CPU}^{max},\forall w$.
+  对于移动边缘执行的过程，为了能够把计算任务卸载到MEC，任务$A\left(L,\tau_d\right)$的输入数据应该被上传到MEC服务器。我们假设MEC计算资源非常足，有高速运行的多核CPU，因此不考虑MEC的计算执行延时，输出的数据量非常的小，反馈回来的传输延时也忽略不计。传输功率记作$p^t$，限制小于最大传输功率$p_{tx}^{max}$,第$t$时隙的能够达到的最大传输速率$r\left(h^t,p^t\right)=\omega\log_2{1+\frac{h^tp^t}{\sigma}}$,$\omega$是系统带宽，$\sigma$是接收机噪声功率。因此如果是MEC服务器执行，执行延时等于输入的传输延时。
+  
+  $$D_{server}^t=\frac{L}{r\left(h^t,p^t\right)}$$
+  
+移动设备耗能可以表示成
+  
+  $$E_{server}^t=p^t\cdot D_{server}^t=p^t\cdot\frac{L}{r\left(h^t,p^t\right)}$$
+  
+### Energy Harvesting Model
+  能量收集的过程可以理解成在第$t$个时隙的开头，$E_H^t$单位的能量到达移动设备。我们假设$E_H^t$在不同时隙是独立同分布的，并且有一个最大值$E_H^{max}$，尽管独立同分布模型很简单，但是它同时考虑到了再生能量过程的随机性和间断性，在每个时隙，到达的部分能量会被收集并且存储到电池当中，用$e^t$表示，并且满足
+  
+  $$0\leq e^t\leq E_H^t,t\in T$$
+可以被下一个时隙的本地执行或者计算卸载使用，我们首先从假设电池的容量足够大开始。之后我们通过选择$e^t$的值，发现电池能量水平被计算卸载的策略所限制而存在上界，所以实际应用中只需要一个有限容量的电池。  每个时隙的开始的电量水平用$B^t$表示。我们假设$B^0=0$并且$B^t<+\infty$.$t$时隙的能量消耗，用$\varepsilon\left(I^t,f^t,p^t\right)$表示。
+
+$$\varepsilon\left(I^t,f^t,p^t\right)=I_m^t E_{mobile}^t+I_s^t E_{server}^t$$
+
+遵循下面的能量约束
+
+$$\varepsilon\left(I^t，f^t,p^t\right)\leq B^t<+\infty,t\in T$$
+
+电池能量水平满足公式
+
+$$B^{t+1}=B^t-\varepsilon\left(I^t,f^t,p^t\right)+e^t,t\in T$$
+  
+  
+## 解决方案
+
+###  Execution Cost Minimization Problem
+执行延迟是用户体验的一个重要的量度，所以会被采用作为计算卸载策略的优化目标。由于能量收集的间断性，有些要执行的计算任务由于缺乏电量，不能被执行而被丢掉。同样，移动设备和MEC服务器之间无线信道的巨大衰落，也会导致任务的输入不能被传递到，考虑到以上的因素，我们对每一次丢掉任务进行一个单位的惩罚。因此，我们定义执行代价，包含了执行延迟和丢掉任务的代价。用以下公式表示
+
+$$cost^t=\mathcal{D}\left(I^t,f^t,p^t\right)+\phi\cdot 1\left(\zeta^t=1,I_d^t=1\right)$$
+
+这里的$\phi$是放弃任务代价的权重，$\mathcal{D}$的表达式如下
+
+$$\mathcal{D}\left(I^t,f^t,p^t\right)=1\left(\zeta^t=1\right)\cdot\left(I_m^t D_{mobile}^t+I_s^t D_{server}^t\right)$$
+
+我们假设成功执行一个计算任务要优于放弃一个任务，所以有$\tau_d\leq\phi$.
+   如果一个任务被决定要执行，即$I_m^t=1$或者$I_s^t=1$,应当在截至时间$\tau_d$之前完成，截止时间的约束应该被满足:
+   $$D\left(I^t,f^t,p^t\right)\leq\tau_d,t\in T$$
+   所以，执行代价最小化问题就可以写成如下形式。
+   $${\mathcal{P}}_1:\min_{I^t,f^t,p^t,e^t}\lim_{T\to\infty}\frac{1}{T}\mathbb{E}\left[\sum_{t=0}^{T-1}{cost}^t\right]$$
+   
+   $$s.t. I_m^t+I_s^t\leq\zeta,t\in T$$
+   
+   $$ \varepsilon\left(I^t,f^t,p^t\right)\leq\zeta^t,t\in T $$
+   
+   $$0\leq p^t\leq p_{tx}^{max}\cdot 1\left(I_s^t=1\right),t\in T$$
+   
+   $$0\leq f_w^t\leq f_{max}^{CPU}\cdot\left(I_m^t=1\right),w=1,...,W,t\in T$$
+   
+   $$I_m^t,I_s^t,I_d^t\in\lbrace 0,1\rbrace,t\in T$$
+
+
+### Dynamic Computation Offloading
+我们提出一种基于李雅普诺夫优化的动态计算卸载算法(以下简称LODCO算法)，来解决$\mathcal{P}_1$.
+
+首先，我们对原来的模型进行简化，如果在第$t$个时隙有计算任务要在本地执行，那么CPU$W$个周期的工作频率应该都是相同的，也就是$f_w^t=f^t,w=1,...,W$。由于约束条件(8),使得不同时隙的系统决策相关联了，这让问题的解决更加复杂。我们可以给电池每个时隙的输出能量引入一个非零的下界$E_{min}$，我们可以得到一个${\mathcal{P}}_1$的修改形式。
+
+$${\mathcal{P}}_2:\min_{T\to\infty}\frac{1}{T}\mathbb{E}\left[\sum_{t=0}^{T-1}{cost}^t\right]$$
+
+$$s.t.\qquad (1),(6),(8),(12)-(17)$$
+
+$$\zeta \left(I^t,f^t,p^t\right)\in\lbrace 0\rbrace\cup\left[E_{min},E_{max}\right],t\in T$$
+
+
+这里$ 0<E_{min}\leq E_{max} $, $ { \mathcal{P} }_1 $中有的约束在${\mathcal{P}}_2$都有，并且还多了一条电池输出能量的约束，因此${\mathcal{P}}_2$更加严格。我们分别用$EC_{{\mathcal{P}}_1}$和$EC_{{\mathcal{P}}_2}$表示两个问题的最优目标函数值，可以证明以下的结论
+
+$$EC_{{\mathcal{P}}_1}\leq EC_{{\mathcal{P}}_2}^2\leq EC_{{\mathcal{P}}_1}+\nu\left(E_{min}\right)$$
+
+
+其中$\nu\left(E_{min}\right)=\rho\left[\phi\left(1-F_H\left(\eta\right)\right)+1_{E_{min}\geq E_{min}^{\tau_d}}\cdot\left(\phi-\tau_{E_{min}}\right)\right]$,$\eta=\left(2^{\frac{L}{\tau_d^w}}-1\right)\sigma\tau_d E_{min}^{-1}$,$E_{min}^{\tau_d}=\kappa W^3\tau_d^{-2}$并且$\tau_{E_{min}}=\kappa^{\frac{1}{2}}W^{\frac{3}{2}}E_{min}^{-\frac{1}{2}}$
+同时也可以证明如果让$E_min$趋近于0，$EC_{\mathcal{P}_2}$可以无限趋近于$EC_{\mathcal{P}_1}$.
+
+为了能够用李雅普诺夫优化的方法，我们先引入一个扰动参数$\theta$,对于带有能量收集装置的移动设备来说，满足
+
+$$\theta\geq \tilde{E}_{max}+V\phi\cdot E_{min}^{-1}$$
+
+其中$\tilde{E}_{max}=min\lbrace max\lbrace\kappa W{\left(f_{CPU}^{max}\right)}^2,p_{tx}^{max}\tau\rbrace,E_{max}\rbrace$,并且$0<V<+\infty$是LODCO算法里面的一个控制参数，单位是$J^2\cdot {second}^{-1}$
+下面引入李雅普诺夫优化里的虚拟队列的概念，虚拟队列定义成$\tilde{B}^t=B^t-\theta$。后面将会介绍，这种算法最小化能量消耗和每个时隙的执行时间的加权和。虚拟能量队列长度$\tilde{B}^t$和控制系数$V$分别能够将$B^t$稳定在$\theta$附近，同时可以将执行代价最小化。每个时隙，系统的操作都被当前时隙的状态来决定。
+如果我们考虑为了维持移动设备的基本操作需要的功耗$P_{basic}$，当$\zeta^t=1$的时候，一个时隙会有四种计算模式，移动设备计算($I_m^t=1$),MEC服务器计算($I_s^t=1$),任务放弃，但是维持基本的操作($I_d^t=1$),放弃任务，同时基本操作也不执行($I_f^t=1$).如果是没有计算任务的时隙，$\zeta^t=0$,只有两种模式，$I_d^t=1$和$I_f^t=1$。因此，移动设备在第$t$个时隙的能量消耗可以表示为$\varepsilon\left(I^t,f^tmp^t\right)=I_m^tE_{mobile}^t+I_s^tE_{server}^t+\left(I_m^t+I_s^t+I_d^t\right)P_{basic}\tau$。我们引入一个单位的代价，来惩罚基本操作中断的情况。
+执行代价函数可以写成${cost}^t=\mathcal{D}\left(I^t,f^t,p^t\right)+\phi\cdot 1\left(\zeta^t=1,I_d^t or I_f^t=1\right)+\psi\cdot 1\left(I_f^t=1\right)$，其中$\psi >0$,是基本操作中断的惩罚权重。接下来会介绍如何将LODCO算法应用到这个问题当中去。
+
+### B.Optimal Computation Offloading in Each Time Slot
+  我们会计算每个时隙的最优解，其中包含两部分，最优的能量收集的值，优化变量是$e^t$,还有计算卸载决策，优化变量是$I^t,f^t,p^t$.
+   能量收集部分，最优收集的能量可以通过解决如下线性规划问题求解。
+   
+   $$ \min_{0\leq e^t\leq E_H^t}\tilde{B}^t e^t$$
+   
+   最优解为$$e^t*=E_H^t\cdot 1\lbrace\tilde{B}^t\leq 0\rbrace$$
+   计算卸载部分，在把$e^t$从目标函数分离之后，我们可以把每个时隙的问题简化成如下的优化问题。
+   $$\mathcal{P}_{CO}:\min_{I^t,f^t,p^t}-\tilde{B}^t\cdot\varepsilon\left(I^t,f^t,p^t\right)+V\left[\left(\mathcal{D}\left(I^t,f^t,p^t\right)+\phi\cdot 1\left(\zeta^t=1,I_d^t=1\right)\right]$$
+   
+   $$s.t.\quad (1),(12)-(18)$$
+   用$\mathcal{F}_{CO}^t$来表示问题的可行域，用$\mathcal{J}_{CO}^t\left(I^t,f^t,p^t\right)$来表示目标函数。对于没有计算任务要求(\zeta^t=0)的时隙,只有一种可行的解，$I_m^t=I_s^t=0,I_d^t=1,f^t=0,p^t=0$因此我们会主要关注有计算任务的时隙。首先我们获取当移动设备本地执行计算的时候，求解最优的CPU工作频率的优化问题$\mathcal{P}_{ME}$
+   
+   $$\mathcal{P}_{ME}:\min_{f^t}-\tilde{B}^t\cdot\kappa W\left(f^t\right)^2+V\cdot\frac{W}{f^t}$$
+   
+   $$s.t.\quad 0<f^t\leq f_{CPU}^{max}$$
+   
+   $$\frac{W}{f^t}\leq\tau_d$$
+   
+   $$\kappa W\left(f^t\right)^2\in\left[E_{min},E_{max}\right]$$
+   
+   
+这个问题可以通过将$I_m^t=1,I_s^t=I_d^t=0,p^t=0$带入到$\mathcal{P}_{CO}$,并且用到$f^t>0$的条件。和能量消耗的限制(14)(18),我们把$\mathcal{P}_{ME}$的目标函数记作$J_m^t\left(f^t\right)$。
+可以证明当且仅当$f_L\leq f_U$的时候$\mathcal{P}_{ME}$可行，这里$f_L=\max\lbrace\sqrt{\frac{E_{min}}{\kappa W}},\frac{W}{\tau_d}\rbrace$,$f_U=min\lbrace\sqrt{\frac{E_{max}}{\kappa W}},f_{max}\rbrace$.也可以证明，如果$\mathcal{P}_{ME}$可行，最优解可以表示成
+
+$$ f(x)=\lbrace
+\begin{aligned}
+x & = & \cos(t) \\
+y & = & \sin(t) \\
+z & = & \frac xy
+\end{aligned}
+$$
+   其中$f_0^t=\left(\frac{V}{-2B^t\kappa}\right)^{\frac{1}{3}}$.可以看出来，CPU工作频率是通过平衡能量收集的代价和执行代价而选择的。我们发现更高的频率巨额救市更慢的执行延迟，可以带来更多可用的能量，这是因为可再生能源的代价减少，更多能量可以被用来提高用户的体验。
+   
+   
+   
+   
+
+## 数值结果
+
+## 结论
+

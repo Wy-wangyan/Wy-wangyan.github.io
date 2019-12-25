@@ -1,0 +1,39 @@
+---
+layout: post
+title: 交替方向乘子法ADMM 总结
+tags: [Convex,Machine Learning,Algorithm]
+image: '/images/posts/4.jpg'
+---
+
+  交替方向乘子法（ADMM）是一种求解具有可分离的凸优化问题的重要方法，由于处理速度快，收敛性能好，ADMM算法在统计学习、机器学习等领域有着广泛应用。
+
+ADMM is an algorithm intended to blend the decomposability of dual ascent with superior convergence properties of the method of multipliers.
+The algorithm solves problems in the form
+
+
+$minimize\qquad f\left(x\right)+g\left(z\right)$
+
+
+$subject \quad to \qquad Ax+Bz=c$
+
+
+We assume that $f$ and $g$ are convex.
+
+As in the method of multipliers,we form the augmented Lagrangian
+
+$L_{\rho}\left(x,z,y\right)=f\left(x\right)+g\left(z\right)+y^T\left(Ax+Bz-c\right)+\frac{\rho}{2}{\Vert Ax+Bz-c\Vert}_2^2$
+
+ADMM consistes of the iterations:
+
+$x^{k+1}:=arg \min_x L_{\rho}\left(x,z^k,y^k\right)$
+
+$z^{k+1}:=arg \min_z L_{\rho}\left(x^{k+1},z,y^k\right)$
+
+$y^{k+1}:=y^k+\rho\left(Ax^{k+1}+Bz^{k+1}-c\right)$
+
+$\rho$ is Lagrangian parameter.(learning rate?)
+
+The algorithm is similar to dual ascent and the method of multipliers.
+
+Here the augmented Lagrangian is minimized jointly with respect to the two primal variables.The algorithm separating the minimization over $x$ and $z$ into two steps.
+
