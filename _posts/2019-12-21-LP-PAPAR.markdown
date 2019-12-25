@@ -148,7 +148,29 @@ y & = & \sin(t) \\
 z & = & \frac xy
 \end{aligned}
 $$
-   其中$f_0^t=\left(\frac{V}{-2B^t\kappa}\right)^{\frac{1}{3}}$.可以看出来，CPU工作频率是通过平衡能量收集的代价和执行代价而选择的。我们发现更高的频率巨额救市更慢的执行延迟，可以带来更多可用的能量，这是因为可再生能源的代价减少，更多能量可以被用来提高用户的体验。
+   其中$f_0^t=\left(\frac{V}{-2B^t\kappa}\right)^{\frac{1}{3}}$.可以看出来，CPU工作频率是通过平衡能量收集的代价和执行代价而选择的。我们发现更高的频率巨额救市更慢的执行延迟，可以带来更多可用的能量，这是因为可再生能源的代价减少，更多能量可以被用来提高用户的体验。$\mathcal{P}_{ME}$不取决于信道增益，所以本地计算的最优CPU频率是和信道状态无关，而且跟虚拟队列长度$\tilde{B}^t$是非递减的。
+   
+   接下来考虑在MEC服务器上执行计算的情况，最优的计算卸载传输功率可以通过解决以下的优化问题得到：
+   
+   $$\mathcal{P}_{SE}:\min_{p^t} -\tilde{B}^t\cdot\frac{p^tL}{r\left(h^t,p^t\right)}+V\cdot\frac{L}{r\left(h^t,p^t\right)}$$
+   
+   $$s.t. 0<p^t\leq p_{tx}^{max}$$
+   
+   $$\frac{L}{r\left(h^t,p^t\right)}\leq\tau_d$$
+   
+   $$\frac{p^t L}{r\left(h^t,p^t\right)\in\left[E_{min},E_{max}\right]}$$
+   
+   也就是将$I_s^t=1,I_m^t=I_d^t=0,f^t=0$带入$\mathcal{P}_{CO}$,(28)(29)分别是MEC执行延迟约束和电池输出能量的约束，我们把优化问题$\mathcal{P}_{SE}$的目标函数记作$J_s^t\left(p^t\right)$,由于无线衰落，有可能计算卸载会失败。可以证明的是，当且仅当$p_L^t\leq p_U^t$,$\mathcal{P}_{SE}$是可行的。其中$p_L^t$和$p_U^t$分别是
+   
+   
+同样也可以证明，对于一个给定的能够使得$\mathcal{P}_{SE}$可行的$h^t$,最优的计算卸载传输功率${p^t}^*$也是随着$\tilde{B}^t$非递减的。我们可以看出最优的计算卸载传输功率取决于电池电量水平和信道状态，更高的电量水平对应更高的传输功率，同时也带来更小的执行延迟，但是$p^{t*}$对$h^t$并没有这种单调性，这是由于电池输出能量约束，这让$p^t$的可行域随着$h^t$变化而变化。
+最优的计算卸载决策可以通过解决优化问题$\mathcal{P}_{CO}$的三种计算模式（丢掉任务，移动设备计算，MEC服务器计算）得到，我们可以通过一个式子来表示。
+$$\left< I^{t*},f^{t*},p^{t*}\right>=arg\min_{\left< I^{t},f^{t},p^{t}\right>\in\mathcal{F}_{CO}^t}J_{CO}\left(I^t,f^t,p^t\right)$$
+
+其中$J_{CO}\left(I^t,f^t,p^t\right)=1_{I_m^t=1}J_m^t\left(f^t\right)+1_{I_s^t=1}J_s^t\left(p^t\right)+1_{I_d^t=1,\zeta^t=1}\cdot V\phi$,$V\phi$是$J_{CO}\left(I^t,f^t,p^t\right)=$计算任务丢掉的情况下的值。注意到，当$\zeta^t=1$并且$\mathcal{F}_{CO}^t=\lbrace\left<\left[I_m^t=0,I_s^t=0,I_d^t=1\right],0,0\right>\right]\rbrace$,计算任务必须被丢掉，$\mathcal{P}_{CO}$只有一个可行解。
+
+
+
    
    
    
