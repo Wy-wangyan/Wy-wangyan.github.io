@@ -1,6 +1,6 @@
 ---
 layout: post
-title: (未完成)Dynamic Computation Ofﬂoading for Mobile-Edge Computing with Energy Harvesting Devices
+title: Dynamic Computation Ofﬂoading for Mobile-Edge Computing with Energy Harvesting Devices
 tags: [MEC]
 image: '/images/posts/6.jpg'
 ---
@@ -8,6 +8,8 @@ image: '/images/posts/6.jpg'
 
     我写的公式里面凡是有\mathcal的部分都显示异常，应该是网站自身的原因，无法解决。
     选修课期末论文，想拿高分就得写的多，用latex，论文仿真复现。在这里按照期末论文的模板规定先写着，然后再填到latex里面去。为什么选这篇论文？因为笔者在逛Github的时候无意发现有这篇论文仿真的matlab代码！
+    2019/12/25 文章已经用latex完整写完了，网页不能正常显示就算了。
+    
     
 ## 摘要
 略
