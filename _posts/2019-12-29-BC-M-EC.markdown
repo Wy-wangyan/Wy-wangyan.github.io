@@ -5,9 +5,6 @@ tags: [MEC,Blockchain,Game Theory,IoT]
 image: '/images/posts/7.jpg'
 ---
 
-
-     实验室一月份要写一篇区块链的文献综述准备投稿，笔者会负责写MEC部分，准备至少看个30篇MEC相关的文献吧，博客会等20号实验室放假之后再多写两篇。这篇文章介绍的比较科普。
- 
  
  <hr>
  
