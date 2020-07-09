@@ -2,7 +2,7 @@
 layout: post
 title: 一笔以太坊交易的生命周期
 tags: [Ethereum]
-image: '/images/posts/1.jpg'
+image: '/images/posts/ethereum_network.png'
 ---
 
 
